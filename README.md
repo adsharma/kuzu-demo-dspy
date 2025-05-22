@@ -35,6 +35,13 @@ Ensure you have Python 3.11+ installed.
    # Install the dependencies
    uv sync
    ```
+3. Activate the environment and generate the BAML client files
+```bash
+cd
+source .venv/bin/activate
+baml-cli generate
+```
+This will generate the BAML client files in the `src/baml_client` directory.
 
 ## Extract data from images and text
 
