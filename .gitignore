@@ -174,3 +174,4 @@ cython_debug/
 
 ex_kuzu_db
 data/extracted_data/stored
+src/baml_client/

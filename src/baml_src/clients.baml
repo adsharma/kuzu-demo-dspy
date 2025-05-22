@@ -1,5 +1,5 @@
 // Learn more about clients at https://docs.boundaryml.com/docs/snippets/clients/overview
- 
+
 client<llm> OpenRouterGPT4oMini {
   provider "openai-generic"
   options {
@@ -127,6 +127,15 @@ client<llm> Inferix_Gemma3_27b {
     base_url "https://inferix.yourtechbud.studio/inferix/v1/llm"
     api_key env.INFERIX_API_KEY
     model "gemma3:27b"
-    temperature 0.2
+    temperature 0.1
+  }
+}
+
+client<llm> OllamaGemma3_12b {
+  provider openai-generic
+  options {
+    base_url "http://localhost:11434/v1"
+    model "gemma3:12b"
+    temperature 0.1
   }
 }
