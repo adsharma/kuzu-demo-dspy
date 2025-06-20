@@ -5,13 +5,17 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "baml-py>=0.88.0",
+    "baml-py>=0.90.0",
+    "fastapi>=0.115.13",
+    "ipykernel>=6.29.5",
     "kuzu>=0.10.0",
     "polars>=1.23.0",
     "pyarrow>=19.0.1",
     "pydantic>=2.10.6",
     "python-dotenv>=1.0.1",
+    "sentence-transformers>=4.1.0",
     "streamlit>=1.42.2",
+    "uvicorn>=0.34.3",
 ]
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
