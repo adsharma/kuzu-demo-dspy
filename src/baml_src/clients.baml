@@ -6,7 +6,7 @@ client<llm> OpenRouterGPT4oMini {
     base_url "https://openrouter.ai/api/v1"
     api_key env.OPENROUTER_API_KEY
     model "openai/gpt-4o-mini"
-    temperature 0.0
+    temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
       "X-Title" "Kuzu" // Optional
@@ -28,13 +28,27 @@ client<llm> OpenRouterGPT4o {
   }
 }
 
+client<llm> OpenRouterClaude37Sonnet {
+  provider "openai-generic"
+  options {
+    base_url "https://openrouter.ai/api/v1"
+    api_key env.OPENROUTER_API_KEY
+    model "anthropic/claude-3.7-sonnet"
+    temperature 0.1
+    headers {
+      "HTTP-Referer" "https://kuzudb.com" // Optional
+      "X-Title" "Kuzu" // Optional
+    }
+  }
+}
+
 client<llm> OpenRouterClaude35Sonnet {
   provider "openai-generic"
   options {
     base_url "https://openrouter.ai/api/v1"
     api_key env.OPENROUTER_API_KEY
     model "anthropic/claude-3.5-sonnet"
-    temperature 0.0
+    temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
       "X-Title" "Kuzu" // Optional

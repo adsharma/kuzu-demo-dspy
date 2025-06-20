@@ -1,59 +1,80 @@
 // --- Data models ---
-class Cypher {
-  query string
+class Query {
+  response string
 }
 
-class Answer {
-  question string
-  answer string
+enum Tool {
+    Text2Cypher  @description("Translate the question into a valid Cypher statement")
+    VectorSearchSymptoms  @description("Search for symptoms or side effects mentioned in the question")
+    VectorSearchConditions  @description("Search for a condition or ailment mentioned in the question")
 }
 
 // --- Functions ---
 
-function RAGText2Cypher(schema: string, question: string) -> Cypher {
+function RAGText2Cypher(schema: string, question: string, additional_context: string | null) -> Query {
   client Gemini2Flash
   prompt #"
-    You are an expert in translating natural language questions into Cypher statements.
-    You will be provided with a question and a graph schema.
-    Use only the provided relationship types and properties in the schema to generate a Cypher
-    statement.
-    The Cypher statement could retrieve nodes, relationships, or both.
-    Do not include any explanations or apologies in your responses.
-    Do not respond to any questions that might ask anything else than for you to construct a
+    {{ _.role("system") }}
+    Translate the given question into a valid Cypher statement.
+
+    IMPORTANT:
+    - Use only the provided nodes, relationships and properties in your Cypher statement.
+    - The Cypher statement could retrieve nodes, relationships, or both. Do not include any
+    explanations or apologies in your responses.
+    - Do not respond to any questions that might ask anything else than for you to construct a
     Cypher statement.
-    Answer in no more than 5 sentences
+    - When returning results, return property values rather than the entire node or relationship.
+    - ALWAYS use the WHERE clause to compare string properties, and compare them using the
+      LOWER() function.
 
     {{ _.role("user") }}
-    Task: Generate a Cypher statement to query a graph database.
-
-    {{ schema}}
-
-    The question is:
+    QUESTION:
     {{ question }}
 
-    Instructions:
-    1. Use only the provided node and relationship types and properties in the schema.
-    2. When returning results, return property values rather than the entire node or relationship.
-    3. ALWAYS use the WHERE clause to compare string properties, and compare them using the
-       LOWER() function.
+    SCHEMA:
+    {{ schema }}
+
+    {% if additional_context %}
+    ADDITIONAL CONTEXT:
+    {{ additional_context }}
+    {% endif %}
 
     {{ ctx.output_format }}
   "#
 }
 
-function RAGAnswerQuestion(question: string, context: string) -> Answer {
-  client OpenRouterGPT4oMiniGenerate
+function PickTool(schema: string, query: string) -> Tool {
+  client OpenRouterGPT4oMini
   prompt #"
-    You are an AI assistant using Retrieval-Augmented Generation (RAG).
-    RAG enhances your responses by retrieving relevant information from a knowledge base.
-    You will be provided with a question and relevant context. Use only this context to answer
-    the question IN FULL SENTENCES.
-    Do not make up an answer. If you don't know the answer, say so clearly.
-    Always strive to provide concise, helpful, and context-aware answers.
+    A prior attempt to write a valid Cypher query failed because an exact match with
+    a property value was not found. Analyze the given query and select the most appropriate tool
+    that can retrieve more useful context to answer the question.
+
+    {{ _.role("user") }}
+    QUESTION:
+    {{ query }}
+
+    ALWAYS RESPECT THE RELATIONSHIP DIRECTIONS:
+    {{ schema}}
+
+    {{ ctx.output_format }}
+  "#
+}
+
+function RAGAnswerQuestion(question: string, cypher: string, response: string) -> string {
+  client OpenRouterGPT4o
+  prompt #"
+    You will be provided with a question and relevant context.
+    
+    - Use only this context to answer the question in a few sentences.
+    - ALWAYS use full sentences
+    - If the provided context is an empty string, DO NOT make up an answer. State that you did not
+    obtain enough context to answer the question.
 
     {{ _.role("user") }}
     QUESTION: {{ question }}
-    RELEVANT CONTEXT: {{ context }}
+    CYPHER: {{ cypher }}
+    RESPONSE: {{ response }}
 
     {{ ctx.output_format }}
 
@@ -61,32 +82,25 @@ function RAGAnswerQuestion(question: string, context: string) -> Answer {
   "#
 }
 
+
 // --- Test cases ---
 
 test CypherDrugCausesSymptom {
   functions [RAGText2Cypher]
   args {
     schema #"
-    ALWAYS RESPECT THE EDGE DIRECTIONS:
-    ---
-    (:DrugGeneric) -[:CAN_CAUSE]-> (:Symptom)
-    (:DrugGeneric) -[:HAS_BRAND]-> (:DrugBrand)
-    (:Condition) -[:IS_TREATED_BY]-> (:DrugGeneric)
-    ---
+    (:Patient {patient_id: string}) -[:EXPERIENCES]-> (:Symptom {name: string})
 
-    Node properties:
-    - DrugGeneric
-        - name: string
-    - DrugBrand
-        - name: string
-    - Condition
-        - name: string
-    - Symptom
-        - name: string
+    (:Patient {patient_id: string}) -[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]-> (:DrugGeneric {name: string})
 
-    Edge properties:
+    (:DrugGeneric {name: string}) -[:CAN_CAUSE]-> (:Symptom {name: string})
+
+    (:DrugGeneric {name: string}) -[:HAS_BRAND]-> (:DrugBrand {name: string})
+
+    (:Condition {name: string}) -[:IS_TREATED_BY]-> (:DrugGeneric {name: string})
     "#
-    question "What are the side effects of Morphine?"
+    question "Which generic drugs are prescribed to patients with hypertension?"
+    additional_context ""
   }
 }
 
@@ -94,26 +108,18 @@ test CypherDrugCausesSymptomLowercase {
   functions [RAGText2Cypher]
   args {
     schema #"
-    ALWAYS RESPECT THE EDGE DIRECTIONS:
-    ---
-    (:DrugGeneric) -[:CAN_CAUSE]-> (:Symptom)
-    (:DrugGeneric) -[:HAS_BRAND]-> (:DrugBrand)
-    (:Condition) -[:IS_TREATED_BY]-> (:DrugGeneric)
-    ---
+    (:Patient {patient_id: string}) -[:EXPERIENCES]-> (:Symptom {name: string})
 
-    Node properties:
-    - DrugGeneric
-        - name: string
-    - DrugBrand
-        - name: string
-    - Condition
-        - name: string
-    - Symptom
-        - name: string
+    (:Patient {patient_id: string}) -[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]-> (:DrugGeneric {name: string})
 
-    Edge properties:
+    (:DrugGeneric {name: string}) -[:CAN_CAUSE]-> (:Symptom {name: string})
+
+    (:DrugGeneric {name: string}) -[:HAS_BRAND]-> (:DrugBrand {name: string})
+
+    (:Condition {name: string}) -[:IS_TREATED_BY]-> (:DrugGeneric {name: string})
     "#
     question "What are the side effects of lansoprazole?"
+    additional_context ""
   }
 }
 
@@ -121,49 +127,44 @@ test CypherDrugGenericHasBrand {
   functions [RAGText2Cypher]
   args {
     schema #"
-    ALWAYS RESPECT THE EDGE DIRECTIONS:
-    ---
-    (:DrugGeneric) -[:CAN_CAUSE]-> (:Symptom)
-    (:DrugGeneric) -[:HAS_BRAND]-> (:DrugBrand)
-    (:Condition) -[:IS_TREATED_BY]-> (:DrugGeneric)
-    ---
+    (:Patient {patient_id: string}) -[:EXPERIENCES]-> (:Symptom {name: string})
 
-    Node properties:
-    - DrugGeneric
-        - name: string
-    - DrugBrand
-        - name: string
-    - Condition
-        - name: string
-    - Symptom
-        - name: string
+    (:Patient {patient_id: string}) -[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]-> (:DrugGeneric {name: string})
 
-    Edge properties:
+    (:DrugGeneric {name: string}) -[:CAN_CAUSE]-> (:Symptom {name: string})
+
+    (:DrugGeneric {name: string}) -[:HAS_BRAND]-> (:DrugBrand {name: string})
+
+    (:Condition {name: string}) -[:IS_TREATED_BY]-> (:DrugGeneric {name: string})
     "#
     question "What drug brands are there for Lansoprazole?"
+    additional_context ""
   }
 }
 
-test GenerationDrugCausesSymptom {
-  functions [RAGAnswerQuestion]
+test PickTool1 {
+  functions [PickTool]
   args {
-    question "What are the side effects of Morphine? Answer in a numbered list.",
-    context "{'s.name': 'Morphine', 's.side_effects': ['rash', 'queasiness', 'dry mouth', 'drowsiness', 'throwing up', 'constipation', 'dizziness', 'confusion']}"
+    schema #"
+    (:Patient {patient_id: string}) -[:EXPERIENCES]-> (:Symptom {name: string})
+
+    (:Patient {patient_id: string}) -[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]-> (:DrugGeneric {name: string})
+
+    (:DrugGeneric {name: string}) -[:CAN_CAUSE]-> (:Symptom {name: string})
+
+    (:DrugGeneric {name: string}) -[:HAS_BRAND]-> (:DrugBrand {name: string})
+
+    (:Condition {name: string}) -[:IS_TREATED_BY]-> (:DrugGeneric {name: string})
+    "#
+    query "MATCH (dg:DrugGeneric)-[:CAN_CAUSE]->(s:Symptom), (dg)-[:HAS_BRAND]->(db:DrugBrand) WHERE LOWER(s.name) = LOWER('sleepiness') RETURN db.name"
   }
 }
 
-test GenerationDrugGenericHasBrand {
+test RAGAnswerQuestion1 {
   functions [RAGAnswerQuestion]
   args {
-    question "What drug brands are there for Lansoprazole?",
-    context "{'s.name': 'Lansoprazole', 's.brand_names': ['Prevacid']}"
-  }
-}
-
-test GenerationMissingContext {
-  functions [RAGAnswerQuestion]
-  args {
-    question "Can you tell me the side effects of Metformin?",
-    context ""
+    question "What drug is the patient X7F3Q prescribed, and what is the dosage and frequency?"
+    cypher "MATCH (p:Patient {patient_id: 'X7F3Q'}) -[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]-> (dg:DrugGeneric) RETURN dg.name, dg.dosage, dg.frequency"
+    context "ramipril, 5mg, daily"
   }
 }
