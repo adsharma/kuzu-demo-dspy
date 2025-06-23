@@ -1,9 +1,10 @@
-import streamlit as st
-import requests
 import json
 
+import requests
+import streamlit as st
+
 # Set page configuration
-st.set_page_config(page_title="Graph RAG with Kuzu", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Graph + vector RAG in Kuzu", page_icon="🔍", layout="wide")
 
 # Initialize session state for chat history
 if "chat_history" not in st.session_state:
@@ -41,7 +42,7 @@ def process_question(question):
         try:
             # Call the agent endpoint
             result = call_api_endpoint("/agent", {"question": question})
-            
+
             if result:
                 # Add to chat history (most recent first)
                 st.session_state.chat_history.insert(0, result)
@@ -72,7 +73,7 @@ def test_vector_search(query: str, search_type: str):
 
 
 # App title
-st.title("Graph RAG with Kuzu")
+st.title("Graph + vector RAG in Kuzu")
 st.markdown("Ask questions about the data in your Kuzu database and get answers powered by RAG.")
 
 # User input
@@ -95,12 +96,13 @@ if st.session_state.chat_history:
 st.subheader("Sample Questions")
 sample_questions = [
     "What condition is treated by the drug brand Xanax?",
-    "Which patients are taking drugs that lower blood pressure, and what is the drug name?",
-    "What condition does the drug brand Digitek treat? What are its side effects?"
+    "Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?",
+    "What drug is the patient B9P2T prescribed, and what is its dosage and frequency?",
 ]
 
 # Custom CSS for left-aligned button text
-st.markdown("""
+st.markdown(
+    """
 <style>
 .stButton > button {
     text-align: left;
@@ -108,7 +110,9 @@ st.markdown("""
     padding-left: 1rem;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 for sample in sample_questions:
     if st.button(sample, key=f"sample_{sample}"):
@@ -199,7 +203,7 @@ with st.sidebar:
 
     if debug_mode:
         st.subheader("Debug Information")
-        
+
         if st.session_state.chat_history:
             st.write("Latest Result Object:")
             st.json(st.session_state.chat_history[0])
@@ -208,11 +212,11 @@ with st.sidebar:
         st.subheader("Test Vector Search")
         vector_query = st.text_input("Enter query for vector search:", placeholder="sleepiness")
         col1, col2 = st.columns(2)
-        
+
         with col1:
             if st.button("Test Symptoms"):
                 test_vector_search(vector_query, "symptoms")
-        
+
         with col2:
             if st.button("Test Conditions"):
                 test_vector_search(vector_query, "conditions")

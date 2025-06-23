@@ -1,27 +1,38 @@
 from contextlib import asynccontextmanager
+from typing import List, Optional
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
-from dotenv import load_dotenv
 
-from helpers import DatabaseManager, GraphRAG, query_vector_index_symptoms, query_vector_index_conditions
 from baml_client import b
+from helpers import (
+    AgentOrchestrator,
+    DatabaseManager,
+    GraphRAG,
+    query_vector_index_conditions,
+    query_vector_index_symptoms,
+)
 
 # Load environment variables from .env file
 load_dotenv()
+
 
 # Pydantic models for request/response
 class QuestionRequest(BaseModel):
     question: str
 
+
 class VectorQueryRequest(BaseModel):
     query: str
+
 
 class AgentResponse(BaseModel):
     question: str
     cypher: str
     response: str
     answer: Optional[str] = None
+
 
 class VectorQueryResponse(BaseModel):
     results: List[str]
@@ -37,12 +48,14 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app and database manager
 app = FastAPI(
-    title="GraphRAG agentic API",
+    title="GraphRAG agentic router API",
     description="Simple agentic Graph RAG system to query a graph database about patients, conditions, drugs and side effects",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 db_manager = DatabaseManager("ex_kuzu_db")
 rag = GraphRAG(db_manager)
+agent_orchestrator = AgentOrchestrator(rag, db_manager, max_retries=2)
+
 
 @app.get("/")
 async def root():
@@ -56,9 +69,9 @@ async def root():
             "POST /query_vector_index_conditions": "Query vector index for similar conditions",
             "GET /": "App information",
             "GET /health": "Health check endpoint",
-            "GET /docs": "Interactive API documentation"
+            "GET /docs": "Interactive API documentation",
         },
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -66,35 +79,12 @@ async def root():
 async def run_agent(request: QuestionRequest):
     """Main agent endpoint that runs the GraphRAG workflow."""
     try:
-        result = rag.retrieve(request.question)
-        if result is None:
-            raise HTTPException(status_code=500, detail="Failed to retrieve information")
-        
-        # Handle vector queries if needed
-        if result.get("next_tool"):
-            next_tool = result["next_tool"]
-            if next_tool == "VectorSearchSymptoms":
-                vector_response = query_vector_index_symptoms(db_manager, request.question)
-                vector_query_result = ", ".join(vector_response)
-                additional_context = f"Similar symptoms in the database: {vector_query_result}"
-            elif next_tool == "VectorSearchConditions":
-                vector_response = query_vector_index_conditions(db_manager, request.question)
-                vector_query_result = ", ".join(vector_response)
-                additional_context = f"Similar conditions in the database: {vector_query_result}"
-            else:
-                additional_context = None
-            
-            # Run the text2cypher again with the new context
-            if additional_context:
-                prompt_context = rag.schema
-                query = b.RAGText2Cypher(prompt_context, request.question, additional_context)
-                query_response = rag.execute_query(request.question, query.response)
-                result["response"] = query_response.response
-                result["cypher"] = query.response
-        
+        # Run the complete agentic workflow
+        result = agent_orchestrator.run_agent(request.question)
+
         # Generate final answer
         answer = rag.answer_question(result)
-        
+
         return AgentResponse(
             question=result["question"],
             cypher=result["cypher"],
@@ -133,4 +123,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
