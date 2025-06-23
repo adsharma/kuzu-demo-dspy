@@ -7,6 +7,7 @@ from tests.test_data import test_cases
 
 load_dotenv()
 set_log_level("WARN")
+BASE_URL = "http://localhost:8001"
 
 
 class TestAgentEndpoint:
@@ -15,7 +16,7 @@ class TestAgentEndpoint:
     @pytest.fixture(scope="class")
     def base_url(self):
         """Base URL for the API."""
-        return "http://localhost:8000"
+        return BASE_URL
     
     @pytest.fixture(scope="class")
     def agent_url(self, base_url):

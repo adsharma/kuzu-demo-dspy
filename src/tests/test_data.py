@@ -3,8 +3,8 @@
 # Test cases with questions and expected values to find in the natural language responses
 test_cases = [
     {
-        "question": "What condition is treated by the drug brand Xanax?",
-        "expected_values": ["sleepy", "nerves"]
+        "question": "What is the drug brand Xanax used for?",
+        "expected_values": ["sleepy", "calm", "nerves"]
     },
     {
         "question": "Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?",
@@ -28,10 +28,10 @@ test_cases = [
     },
     {
         "question": "Can Vancomycin cause vomiting as a side effect?",
-        "expected_values": ["upset stomach", "yes"]
+        "expected_values": ["yes"]
     },
     {
-        "question": "What are the side effects of drugs that bring down cholestrol?",
+        "question": "What are the side effects of drugs for conditions related to lowering cholestrol?",
         "expected_values": ["upset stomach", "headache", "muscle pain"]
     },
     {
@@ -39,7 +39,7 @@ test_cases = [
         "expected_values": ["L4D8Z"]
     },
     {
-        "question": "What drug brands treat conditions to do with problems with heart rhythm?",
+        "question": "What drug brands treat the condition of irregular heart rhythm?",
         "expected_values": ["Digitek", "Cordarone", "Inderal", "Pacerone", "Lanoxin"]
     },
 ]

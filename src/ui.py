@@ -11,7 +11,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 # API configuration
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8001"
 
 
 def call_api_endpoint(endpoint: str, data: dict):
@@ -195,7 +195,7 @@ with st.sidebar:
             st.error("❌ API Server is not responding")
     except requests.exceptions.RequestException:
         st.error("❌ Cannot connect to API Server")
-        st.info("Make sure the FastAPI server is running on localhost:8000")
+        st.info("Make sure the FastAPI server is running on localhost:8001")
 
     # Debug mode toggle
     st.markdown("---")

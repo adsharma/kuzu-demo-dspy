@@ -9,7 +9,7 @@ client<llm> OpenRouterGPT4oMini {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }
@@ -23,7 +23,7 @@ client<llm> OpenRouterGPT4o {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }
@@ -37,7 +37,7 @@ client<llm> OpenRouterGPT41 {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }
@@ -51,7 +51,7 @@ client<llm> OpenRouterPhi4 {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }
@@ -65,7 +65,21 @@ client<llm> OpenRouterQwen3_30b_A3b {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
+    }
+  }
+}
+
+client<llm> OpenRouterMistralMedium3 {
+  provider "openai-generic"
+  options {
+    base_url "https://openrouter.ai/api/v1"
+    api_key env.OPENROUTER_API_KEY
+    model "mistralai/mistral-medium-3"
+    temperature 0.1
+    headers {
+      "HTTP-Referer" "https://kuzudb.com" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }
@@ -79,7 +93,7 @@ client<llm> OpenRouterGoogleGemini25Flash {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }
@@ -93,7 +107,7 @@ client<llm> OpenRouterGoogleGemini2Flash {
     temperature 0.1
     headers {
       "HTTP-Referer" "https://kuzudb.com" // Optional
-      "X-Title" "Kuzu Graph RAG" // Optional
+      "X-Title" "Graph RAG" // Optional
     }
   }
 }

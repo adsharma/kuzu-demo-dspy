@@ -12,7 +12,7 @@ enum Tool {
 // --- Functions ---
 
 function RAGText2Cypher(schema: string, question: string, additional_context: string | null) -> Query {
-  client Gemini25Flash
+  client OpenRouterGoogleGemini2Flash
   prompt #"
     Translate the given question into a valid Cypher query that respects the given graph schema.
 
