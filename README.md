@@ -75,7 +75,7 @@ uv run src/02_create_patient_graph.py
 This will augment the pre-existing graph (from the prior step) with the data from the
 patient notes.
 
-### (Optional): Create vector index
+### Create vector index
 
 To help with vector-assisted graph traversal, we can also create a vector index in Kuzu (requires `kuzu>=0.10.0`)!
 The script `03_create_vector_index.py` does the following:
@@ -133,13 +133,13 @@ uv run notes_extractor_eval.py
 
 The text extraction task is well handled by all models tested!
 
-### 2. Graph RAG
+### 2. Graph RAG + agent router
 
 The second part of the project involves building a Graph RAG pipeline on top of the graph constructed
 earlier from the two data sources. This stage involves evaluating the correctness/relevance of RAG
-pipeline that retrieves from a) just the graph and b) the graph + vector index. Text2Cypher is used
-to generate Cypher queries via LLMs, and so some experiments on open source vs. proprietary LLM performance
-are run to help understand the difference in quality of responses.
+pipeline that retrieves from a) just the graph and b) the graph + vector index using an agentic router.
+Text2Cypher is used to generate Cypher queries via LLMs, and so some experiments on open source vs.
+proprietary LLM performance are run to help understand the difference in quality of responses.
 
 ### Run FastAPI server
 
