@@ -8,14 +8,13 @@ from sentence_transformers import SentenceTransformer
 db = kuzu.Database("ex_kuzu_db")
 conn = kuzu.Connection(db)
 
-from sentence_transformers import SentenceTransformer
-
 # Load the model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Install and load the vector extension
 conn.execute("INSTALL vector; LOAD vector;");
 
+# Symptoms
 symptom_ids = conn.execute("""
     MATCH (s:Symptom)
     RETURN s.name AS id
@@ -30,13 +29,14 @@ symptoms_df = pl.DataFrame({
 })
 print("Finished creating symptom embeddings")
 
+# Conditions
 condition_ids = conn.execute("""
     MATCH (c:Condition)
     RETURN c.name AS id
 """)
 condition_ids = condition_ids.get_as_pl() # type: ignore
 
-# Embed symptoms
+# Embed conditions
 condition_embeddings = model.encode(condition_ids["id"].to_list()).tolist()
 conditions_df = pl.DataFrame({
     "id": condition_ids["id"],
