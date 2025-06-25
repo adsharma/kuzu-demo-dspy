@@ -167,6 +167,23 @@ The test suite is designed to test the performance of the Graph RAG pipeline in 
 
 The tests are designed to be run on a local machine with a FastAPI server running.
 
+#### Vanilla Graph RAG
+
+The following plot shows the results of vanilla Graph RAG, i.e., a single pass at Text2Cypher. Some
+of the queries (e.g., Q6 and Q7) are objectively hard (borderline impossible) to answer with a single Cypher query,
+as the terms may not align with those that are in the database -- a vector search would be needed
+to help the LLM find the right query terms.
+
+![](./assets/vanilla_graph_rag_heatmap.png)
+
+#### Router Agent Graph RAG
+
+When including a router agent that can pick the appropriate vector search tools, we can see that the results
+are significantly improved. Recent models like `openai/gpt-4.1` and `google/gemini-2.0-flash` and `google/gemini-2.5-flash`
+do really well on all 10 queries in the test suite.
+
+![](./assets/router_agent_graph_rag_heatmap.png)
+
 ### Run the Streamlit app
 
 To run the Streamlit app, run the following command:
