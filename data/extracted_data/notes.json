@@ -18,7 +18,7 @@
             "name": "Lansoprazole",
             "date": "2024-11-03",
             "dosage": "30mg",
-            "frequency": "daily before breakfast"
+            "frequency": "daily"
         },
         "side_effects": [
             "constipation",

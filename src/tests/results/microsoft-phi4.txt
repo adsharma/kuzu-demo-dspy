@@ -1,0 +1,591 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.2, pytest-8.4.1, pluggy-1.6.0
+rootdir: /Users/prrao/code/baml-kuzu-demo
+configfile: pyproject.toml
+plugins: anyio-4.9.0
+collected 20 items
+
+tests/test_agent_endpoint.py FFFF......                                  [ 50%]
+tests/test_vanilla_graphrag.py FFFFFFF.FF                                [100%]
+
+=================================== FAILURES ===================================
+__ TestAgentEndpoint.test_agent_endpoint_contains_expected_values[test_case0] __
+
+self = <tests.test_agent_endpoint.TestAgentEndpoint object at 0x102d51e50>
+agent_url = 'http://localhost:8001/agent'
+test_case = {'expected_values': ['sleepy', 'calm', 'nerves'], 'question': 'What is the drug brand Xanax used for?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_agent_endpoint_contains_expected_values(self, agent_url, test_case):
+        """Test that the /agent endpoint returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # Make request to the agent endpoint
+        payload = {"question": question}
+        response = requests.post(agent_url, json=payload)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.json()}")
+    
+        # Assert successful response
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    
+        # Parse response
+        data = response.json()
+    
+        # Check that all required fields are present
+        assert "question" in data, "Response missing 'question' field"
+        assert "cypher" in data, "Response missing 'cypher' field"
+        assert "response" in data, "Response missing 'response' field"
+        assert "answer" in data, "Response missing 'answer' field"
+    
+        # Assert that the answer contains the expected values
+        answer = data["answer"]
+        assert answer, "Answer should not be empty"
+    
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'sleepy' not found in answer: I don't have enough information to answer the question about what the drug brand Xanax is used for.
+E           assert 'sleepy' in "i don't have enough information to answer the question about what the drug brand xanax is used for."
+E            +  where 'sleepy' = <built-in method lower of str object at 0x102e00990>()
+E            +    where <built-in method lower of str object at 0x102e00990> = 'sleepy'.lower
+
+tests/test_agent_endpoint.py:59: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What is the drug brand Xanax used for?
+Response status: 200
+Response body: {'question': 'What is the drug brand Xanax used for?', 'cypher': "MATCH (db:DrugBrand)-[:HAS_BRAND]->(dg:DrugGeneric)-[:IS_TREATED_BY]->(c:Condition) WHERE LOWER(db.name) = 'xanax' RETURN c.name AS condition", 'response': '', 'answer': "I don't have enough information to answer the question about what the drug brand Xanax is used for."}
+__ TestAgentEndpoint.test_agent_endpoint_contains_expected_values[test_case1] __
+
+self = <tests.test_agent_endpoint.TestAgentEndpoint object at 0x102d520d0>
+agent_url = 'http://localhost:8001/agent'
+test_case = {'expected_values': ['X7F3Q', 'ramipril', '5mg', 'daily'], 'question': 'Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_agent_endpoint_contains_expected_values(self, agent_url, test_case):
+        """Test that the /agent endpoint returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # Make request to the agent endpoint
+        payload = {"question": question}
+        response = requests.post(agent_url, json=payload)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.json()}")
+    
+        # Assert successful response
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    
+        # Parse response
+        data = response.json()
+    
+        # Check that all required fields are present
+        assert "question" in data, "Response missing 'question' field"
+        assert "cypher" in data, "Response missing 'cypher' field"
+        assert "response" in data, "Response missing 'response' field"
+        assert "answer" in data, "Response missing 'answer' field"
+    
+        # Assert that the answer contains the expected values
+        answer = data["answer"]
+        assert answer, "Answer should not be empty"
+    
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'X7F3Q' not found in answer: I don't have enough information to answer the question.
+E           assert 'x7f3q' in "i don't have enough information to answer the question."
+E            +  where 'x7f3q' = <built-in method lower of str object at 0x102e00ab0>()
+E            +    where <built-in method lower of str object at 0x102e00ab0> = 'X7F3Q'.lower
+
+tests/test_agent_endpoint.py:59: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?
+Response status: 200
+Response body: {'question': 'Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?', 'cypher': "MATCH (c:Condition)-[:IS_TREATED_BY]->(d:DrugGeneric)<-[:IS_PRESCRIBED]-(p:Patient) WHERE LOWER(c.name) CONTAINS 'lowers blood pressure' RETURN p.patient_id AS patient_id, d.name AS drug_name, r.dosage AS dosage, r.frequency AS frequency", 'response': '', 'answer': "I don't have enough information to answer the question."}
+__ TestAgentEndpoint.test_agent_endpoint_contains_expected_values[test_case2] __
+
+self = <tests.test_agent_endpoint.TestAgentEndpoint object at 0x102d75220>
+agent_url = 'http://localhost:8001/agent'
+test_case = {'expected_values': ['lansoprazole', '30mg', 'daily'], 'question': 'What drug is the patient B9P2T prescribed, and what is its dosage and frequency?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_agent_endpoint_contains_expected_values(self, agent_url, test_case):
+        """Test that the /agent endpoint returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # Make request to the agent endpoint
+        payload = {"question": question}
+        response = requests.post(agent_url, json=payload)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.json()}")
+    
+        # Assert successful response
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    
+        # Parse response
+        data = response.json()
+    
+        # Check that all required fields are present
+        assert "question" in data, "Response missing 'question' field"
+        assert "cypher" in data, "Response missing 'cypher' field"
+        assert "response" in data, "Response missing 'response' field"
+        assert "answer" in data, "Response missing 'answer' field"
+    
+        # Assert that the answer contains the expected values
+        answer = data["answer"]
+        assert answer, "Answer should not be empty"
+    
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'lansoprazole' not found in answer: I don't have enough information to answer the question.
+E           assert 'lansoprazole' in "i don't have enough information to answer the question."
+E            +  where 'lansoprazole' = <built-in method lower of str object at 0x102f1dc30>()
+E            +    where <built-in method lower of str object at 0x102f1dc30> = 'lansoprazole'.lower
+
+tests/test_agent_endpoint.py:59: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What drug is the patient B9P2T prescribed, and what is its dosage and frequency?
+Response status: 200
+Response body: {'question': 'What drug is the patient B9P2T prescribed, and what is its dosage and frequency?', 'cypher': "MATCH (p:Patient {patient_id: 'B9P2T'})-[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]->(d:DrugGeneric) RETURN d.name AS drug_name, p.dosage AS dosage, p.frequency AS frequency", 'response': '', 'answer': "I don't have enough information to answer the question."}
+__ TestAgentEndpoint.test_agent_endpoint_contains_expected_values[test_case3] __
+
+self = <tests.test_agent_endpoint.TestAgentEndpoint object at 0x102d75480>
+agent_url = 'http://localhost:8001/agent'
+test_case = {'expected_values': ['drowsiness', 'dizziness', 'confusion', 'headache'], 'question': 'What are the side effects of the drug brand Ambien?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_agent_endpoint_contains_expected_values(self, agent_url, test_case):
+        """Test that the /agent endpoint returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # Make request to the agent endpoint
+        payload = {"question": question}
+        response = requests.post(agent_url, json=payload)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.json()}")
+    
+        # Assert successful response
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    
+        # Parse response
+        data = response.json()
+    
+        # Check that all required fields are present
+        assert "question" in data, "Response missing 'question' field"
+        assert "cypher" in data, "Response missing 'cypher' field"
+        assert "response" in data, "Response missing 'response' field"
+        assert "answer" in data, "Response missing 'answer' field"
+    
+        # Assert that the answer contains the expected values
+        answer = data["answer"]
+        assert answer, "Answer should not be empty"
+    
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'drowsiness' not found in answer: I don't have enough information to answer the question about the side effects of the drug brand Ambien.
+E           assert 'drowsiness' in "i don't have enough information to answer the question about the side effects of the drug brand ambien."
+E            +  where 'drowsiness' = <built-in method lower of str object at 0x102f1db70>()
+E            +    where <built-in method lower of str object at 0x102f1db70> = 'drowsiness'.lower
+
+tests/test_agent_endpoint.py:59: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What are the side effects of the drug brand Ambien?
+Response status: 200
+Response body: {'question': 'What are the side effects of the drug brand Ambien?', 'cypher': "MATCH (db:DrugBrand)-[:HAS_BRAND]->(dg:DrugGeneric)-[:CAN_CAUSE]->(s:Symptom) WHERE LOWER(db.name) = 'ambien' RETURN s.name AS side_effects", 'response': '', 'answer': "I don't have enough information to answer the question about the side effects of the drug brand Ambien."}
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case0] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x13c8d5090>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['sleepy', 'calm', 'nerves'], 'question': 'What is the drug brand Xanax used for?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'sleepy' not found in answer: I don't have enough information to answer the question about what the drug brand Xanax is used for.
+E           assert 'sleepy' in "i don't have enough information to answer the question about what the drug brand xanax is used for."
+E            +  where 'sleepy' = <built-in method lower of str object at 0x102e00990>()
+E            +    where <built-in method lower of str object at 0x102e00990> = 'sleepy'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What is the drug brand Xanax used for?
+Generated Cypher: MATCH (db:DrugBrand)-[:HAS_BRAND]->(dg:DrugGeneric)-[:IS_TREATED_BY]->(c:Condition) WHERE LOWER(db.name) = 'xanax' RETURN c.name AS condition
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about what the drug brand Xanax is used for.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case1] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x13c8d51d0>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['X7F3Q', 'ramipril', '5mg', 'daily'], 'question': 'Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'X7F3Q' not found in answer: I don't have enough information to answer the question. The CONTEXT provided is empty, so I cannot determine which patients are being given drugs to lower blood pressure, nor can I provide details about the drug name, dosage, and frequency.
+E           assert 'x7f3q' in "i don't have enough information to answer the question. the context provided is empty, so i cannot determine which pa...s are being given drugs to lower blood pressure, nor can i provide details about the drug name, dosage, and frequency."
+E            +  where 'x7f3q' = <built-in method lower of str object at 0x102e00ab0>()
+E            +    where <built-in method lower of str object at 0x102e00ab0> = 'X7F3Q'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: Which patients are being given drugs to lower blood pressure, and what is the drug name, dosage and frequency?
+Generated Cypher: MATCH (p:Patient)-[r:IS_PRESCRIBED]->(d:DrugGeneric)-[:IS_TREATED_BY]->(c:Condition) WHERE LOWER(c.name) = 'lower blood pressure' RETURN p.patient_id AS patient_id, d.name AS drug_name, r.dosage AS dosage, r.frequency AS frequency
+Raw response: 
+Natural language answer: I don't have enough information to answer the question. The CONTEXT provided is empty, so I cannot determine which patients are being given drugs to lower blood pressure, nor can I provide details about the drug name, dosage, and frequency.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case2] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x103e93820>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['lansoprazole', '30mg', 'daily'], 'question': 'What drug is the patient B9P2T prescribed, and what is its dosage and frequency?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'lansoprazole' not found in answer: I don't have enough information to answer the question.
+E           assert 'lansoprazole' in "i don't have enough information to answer the question."
+E            +  where 'lansoprazole' = <built-in method lower of str object at 0x102f1dc30>()
+E            +    where <built-in method lower of str object at 0x102f1dc30> = 'lansoprazole'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Error executing query: Binder exception: Variable date is not in scope.
+
+Question: What drug is the patient B9P2T prescribed, and what is its dosage and frequency?
+Generated Cypher: MATCH (p:Patient {patient_id: 'B9P2T'})-[:IS_PRESCRIBED {date: date, dosage: string, frequency: string}]->(d:DrugGeneric) RETURN d.name AS drug_name, p.dosage AS dosage, p.frequency AS frequency
+Raw response: 
+Natural language answer: I don't have enough information to answer the question.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case3] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x103e936f0>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['drowsiness', 'dizziness', 'confusion', 'headache'], 'question': 'What are the side effects of the drug brand Ambien?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'drowsiness' not found in answer: I don't have enough information to answer the question about the side effects of the drug brand Ambien.
+E           assert 'drowsiness' in "i don't have enough information to answer the question about the side effects of the drug brand ambien."
+E            +  where 'drowsiness' = <built-in method lower of str object at 0x102f1db70>()
+E            +    where <built-in method lower of str object at 0x102f1db70> = 'drowsiness'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What are the side effects of the drug brand Ambien?
+Generated Cypher: MATCH (db:DrugBrand)-[:HAS_BRAND]->(dg:DrugGeneric)-[:CAN_CAUSE]->(s:Symptom) WHERE LOWER(db.name) = 'ambien' RETURN s.name AS side_effects
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about the side effects of the drug brand Ambien.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case4] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x13c81f2f0>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['diazepam', 'morphine', 'oxycodone'], 'question': 'What drugs can cause sleepiness as a side effect?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'diazepam' not found in answer: I don't have enough information to answer the question about which drugs can cause sleepiness as a side effect.
+E           assert 'diazepam' in "i don't have enough information to answer the question about which drugs can cause sleepiness as a side effect."
+E            +  where 'diazepam' = <built-in method lower of str object at 0x102f1da30>()
+E            +    where <built-in method lower of str object at 0x102f1da30> = 'diazepam'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What drugs can cause sleepiness as a side effect?
+Generated Cypher: MATCH (d:DrugGeneric)-[:CAN_CAUSE]->(s:Symptom) WHERE LOWER(s.name) = 'sleepiness' RETURN DISTINCT d.name
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about which drugs can cause sleepiness as a side effect.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case5] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x13c8c88d0>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['L4D8Z'], 'question': 'Which patients experience sleepiness as a side effect?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'L4D8Z' not found in answer: I don't have enough information to answer the question about which patients experience sleepiness as a side effect.
+E           assert 'l4d8z' in "i don't have enough information to answer the question about which patients experience sleepiness as a side effect."
+E            +  where 'l4d8z' = <built-in method lower of str object at 0x102e00b70>()
+E            +    where <built-in method lower of str object at 0x102e00b70> = 'L4D8Z'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: Which patients experience sleepiness as a side effect?
+Generated Cypher: MATCH (p:Patient)-[:EXPERIENCES]->(s:Symptom {name: 'sleepiness'}) RETURN DISTINCT p.patient_id
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about which patients experience sleepiness as a side effect.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case6] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x13c8c8c00>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['yes'], 'question': 'Can Vancomycin cause vomiting as a side effect?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'yes' not found in answer: I don't have enough information to answer the question about whether Vancomycin can cause vomiting as a side effect.
+E           assert 'yes' in "i don't have enough information to answer the question about whether vancomycin can cause vomiting as a side effect."
+E            +  where 'yes' = <built-in method lower of str object at 0x100c1d530>()
+E            +    where <built-in method lower of str object at 0x100c1d530> = 'yes'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: Can Vancomycin cause vomiting as a side effect?
+Generated Cypher: MATCH (d:DrugGeneric)-[:CAN_CAUSE]->(s:Symptom) WHERE LOWER(d.name) = 'vancomycin' AND LOWER(s.name) = 'vomiting' RETURN s.name AS side_effect
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about whether Vancomycin can cause vomiting as a side effect.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case8] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x13c5ebb50>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['L4D8Z'], 'question': 'Which patients experience sleepiness as a side effect?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'L4D8Z' not found in answer: I don't have enough information to answer the question about which patients experience sleepiness as a side effect.
+E           assert 'l4d8z' in "i don't have enough information to answer the question about which patients experience sleepiness as a side effect."
+E            +  where 'l4d8z' = <built-in method lower of str object at 0x102e00b70>()
+E            +    where <built-in method lower of str object at 0x102e00b70> = 'L4D8Z'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: Which patients experience sleepiness as a side effect?
+Generated Cypher: MATCH (p:Patient)-[:EXPERIENCES]->(s:Symptom {name: 'sleepiness'}) RETURN p.patient_id
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about which patients experience sleepiness as a side effect.
+_ TestAnswerQuestion.test_answer_question_contains_expected_values[test_case9] _
+
+self = <tests.test_vanilla_graphrag.TestAnswerQuestion object at 0x103eeb980>
+graph_rag = <helpers.GraphRAG object at 0x13c8a06e0>
+test_case = {'expected_values': ['Digitek', 'Cordarone', 'Inderal', 'Pacerone', 'Lanoxin'], 'question': 'What drug brands treat the condition of irregular heart rhythm?'}
+
+    @pytest.mark.parametrize("test_case", test_cases)
+    def test_answer_question_contains_expected_values(self, graph_rag, test_case):
+        """Test that the answer_question method returns responses containing expected values."""
+    
+        question = test_case["question"]
+        expected_values = test_case["expected_values"]
+    
+        # First retrieve the data
+        result = graph_rag.retrieve(question)
+    
+        # Then generate the natural language answer
+        answer = graph_rag.answer_question(result)
+    
+        print(f"\nQuestion: {question}")
+        print(f"Generated Cypher: {result['cypher']}")
+        print(f"Raw response: {result['response']}")
+        print(f"Natural language answer: {answer}")
+    
+        # Assert that the answer contains the expected values
+        answer_lower = answer.lower()
+        for expected_value in expected_values:
+>           assert expected_value.lower() in answer_lower, f"Expected '{expected_value}' not found in answer: {answer}"
+E           AssertionError: Expected 'Digitek' not found in answer: I don't have enough information to answer the question about which drug brands treat the condition of irregular heart rhythm.
+E           assert 'digitek' in "i don't have enough information to answer the question about which drug brands treat the condition of irregular heart rhythm."
+E            +  where 'digitek' = <built-in method lower of str object at 0x102e00ba0>()
+E            +    where <built-in method lower of str object at 0x102e00ba0> = 'Digitek'.lower
+
+tests/test_vanilla_graphrag.py:48: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+Question: What drug brands treat the condition of irregular heart rhythm?
+Generated Cypher: MATCH (c:Condition)-[:IS_TREATED_BY]->(g:DrugGeneric)-[:HAS_BRAND]->(b:DrugBrand) WHERE LOWER(c.name) = 'irregular heart rhythm' RETURN DISTINCT b.name
+Raw response: 
+Natural language answer: I don't have enough information to answer the question about which drug brands treat the condition of irregular heart rhythm.
+=========================== short test summary info ============================
+FAILED tests/test_agent_endpoint.py::TestAgentEndpoint::test_agent_endpoint_contains_expected_values[test_case0]
+FAILED tests/test_agent_endpoint.py::TestAgentEndpoint::test_agent_endpoint_contains_expected_values[test_case1]
+FAILED tests/test_agent_endpoint.py::TestAgentEndpoint::test_agent_endpoint_contains_expected_values[test_case2]
+FAILED tests/test_agent_endpoint.py::TestAgentEndpoint::test_agent_endpoint_contains_expected_values[test_case3]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case0]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case1]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case2]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case3]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case4]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case5]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case6]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case8]
+FAILED tests/test_vanilla_graphrag.py::TestAnswerQuestion::test_answer_question_contains_expected_values[test_case9]
+=================== 13 failed, 7 passed in 102.08s (0:01:42) ===================

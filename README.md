@@ -62,8 +62,7 @@ This will output JSON files into the `../data/extracted_data` directory.
 To create the graph in Kuzu, run the following command:
 
 ```bash
-cd src
-uv run 01_create_drug_graph.py
+uv run src/01_create_drug_graph.py
 ```
 
 This will persist the Kuzu graph locally in the `ex_kuzu_db` directory.
@@ -71,59 +70,32 @@ This will persist the Kuzu graph locally in the `ex_kuzu_db` directory.
 To add the patient data to the graph, run the following command:
 
 ```bash
-cd src
-uv run 02_create_patient_graph.py
+uv run src/02_create_patient_graph.py
 ```
 This will augment the pre-existing graph (from the prior step) with the data from the
 patient notes.
 
-## Running the Graph RAG chatbot
+### Create vector index
 
-To run the Streamlit application:
+To help with vector-assisted graph traversal, we can also create a vector index in Kuzu (requires `kuzu>=0.10.0`)!
+The script `03_create_vector_index.py` does the following:
+
+- Create a vector index on the `Condition` node table to perform fuzzy search on conditions treated by drugs
+- Create another vector index on the `Symptom` node table to perform fuzzy search on symptom or side effects caused by a drug.
 
 ```bash
-cd src
-uv run streamlit run streamlit_app.py
+uv run src/03_create_vector_index.py
 ```
-
-The application will be available at http://localhost:8501 by default.
-
-## Sample questions
-
-The application comes with several sample questions you can try:
-- "What drug brands are there for lansoprazole?"
-- "What are the side effects of morphine?"
-
-## How it works
-
-1. The user enters a question in natural language
-2. BAML converts the question to a Cypher query
-3. The Cypher query is executed against the Kuzu graph database
-4. The results are processed and a natural language answer is generated
-5. Both the query and answer are displayed to the user
-
-## Notes
-
-- The application maintains a history of up to 10 recent questions and answers
-- You can clear the history using the "Clear History" button
-- A debug mode is available in the sidebar that provides:
-  - The GraphRAG schema used for generating Cypher queries
-  - Detailed information about the latest result
-  - A direct Cypher query execution interface for testing
-
-
-> [!NOTE]
-> The Graph RAG application is far from perfect and has room for improvement. For example,
-> custom modules can be incorporated downstream of Text2Cypher to check the Cypher queries
-> for syntax errors before execution. In addition, corrector agents could be added to the
-> pipeline to increase robustness so that fewer questions result in an empty response.
 
 ---
 
 ## Evaluation
 
-Part of the motivation for this project was to evaluate the performance of BAML and the given
-LLM for the task of extracting data from unstructured text. We have two tasks to evaluate:
+### 1. Graph construction
+
+The main motivation for this project was to evaluate the performance of BAML and the given
+LLM for the task of extracting data from unstructured text. For the graph construction task,
+we have two main stages to evaluate:
 
 1. Extracting drugs and side effects from a table in a PDF
 2. Extracting medications and side effects from clinical notes
@@ -160,3 +132,70 @@ uv run notes_extractor_eval.py
 | `google/gemini-2.0-flash` | Mar 2025 | 19 | 0 | 0 | 0 | Free tier | N/A |
 
 The text extraction task is well handled by all models tested!
+
+### 2. Graph RAG + agent router
+
+The second part of the project involves building a Graph RAG pipeline on top of the graph constructed
+earlier from the two data sources. This stage involves evaluating the correctness/relevance of RAG
+pipeline that retrieves from a) just the graph and b) the graph + vector index using an agentic router.
+Text2Cypher is used to generate Cypher queries via LLMs, and so some experiments on open source vs.
+proprietary LLM performance are run to help understand the difference in quality of responses.
+
+### Run FastAPI server
+
+A FastAPI server is provided to interact with the graph RAG and agentic pipeline. To run the server, run the following command:
+
+```bash
+cd src && uvicorn app:app --host 0.0.0.0 --port 8001 --reload
+```
+
+This will start the server on `http://localhost:8001`.
+
+### Run tests
+
+To run the tests, run the following command:
+
+```bash
+uv run pytest
+```
+
+This will run the test suite in the `src/tests` directory and output the results to the console.
+The test suite is designed to test the performance of the Graph RAG pipeline in two scenarios:
+
+1. Vanilla Graph RAG: Retrieving information from the graph only
+2. Graph RAG with agent router: Retrieving information from the graph + vector index via an agentic router
+
+The tests are designed to be run on a local machine with a FastAPI server running.
+
+#### Vanilla Graph RAG
+
+The following plot shows the results of vanilla Graph RAG, i.e., a single pass at Text2Cypher. Some
+of the queries (e.g., Q6 and Q7) are objectively hard (borderline impossible) to answer with a single Cypher query,
+as the terms may not align with those that are in the database -- a vector search would be needed
+to help the LLM find the right query terms.
+
+![](./assets/vanilla_graph_rag_heatmap.png)
+
+#### Router Agent Graph RAG
+
+When including a router agent that can pick the appropriate vector search tools, we can see that the results
+are significantly improved. Recent models like `openai/gpt-4.1` and `google/gemini-2.0-flash` and `google/gemini-2.5-flash`
+do really well on all 10 queries in the test suite.
+
+![](./assets/router_agent_graph_rag_heatmap.png)
+
+### Run the Streamlit app
+
+To run the Streamlit app, run the following command:
+
+```bash
+cd src
+uv run streamlit run ui.py
+```
+
+This will start the Streamlit app on `http://localhost:8501`.
+
+Sample queries are provided in the UI, but you are free to ask any question you want! An example run
+is shown below:
+
+![](./assets/graph-rag-agent-router.gif)

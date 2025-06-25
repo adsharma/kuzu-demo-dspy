@@ -1,6 +1,6 @@
 services:
   explorer:
-    image: kuzudb/explorer:0.8.2
+    image: kuzudb/explorer:0.10.0
     environment:
       - MODE=READ_ONLY
     ports:
