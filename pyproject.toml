@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.115.13",
     "ipykernel>=6.29.5",
     "kuzu>=0.10.0",
+    "matplotlib>=3.10.3",
     "polars>=1.23.0",
     "pyarrow>=19.0.1",
     "pydantic>=2.10.6",
