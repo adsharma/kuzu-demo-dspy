@@ -4,13 +4,14 @@ from pathlib import Path
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from pydantic_models.image_extractor import ConditionAndDrug
+from helpers import get_client
 import base64
 import mimetypes
 from openai import OpenAI
 
 load_dotenv()
 
-client = OpenAI()
+client = get_client()
 
 
 def extract_from_base64(
@@ -18,7 +19,7 @@ def extract_from_base64(
 ) -> list[ConditionAndDrug]:
     """Extract entities from a base64-encoded image"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="qwen3:30b",
         messages=[
             {
                 "role": "system",

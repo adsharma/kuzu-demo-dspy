@@ -16,7 +16,11 @@ from pydantic_models.graphrag import Query, Tool
 
 MODEL = SentenceTransformer("all-MiniLM-L6-v2")
 
-client = OpenAI(base_url = 'http://192.168.68.54:11434/v1', api_key='ollama')
+def get_client():
+    client = OpenAI(base_url = 'http://192.168.68.54:11434/v1', api_key='ollama')
+    return client
+
+client = get_client()
 
 
 def rag_text_to_cypher(schema: str, question: str, additional_context: str | None) -> Query:

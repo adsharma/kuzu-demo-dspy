@@ -2,17 +2,18 @@ import json
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from helpers import get_client
 from pydantic_models.notes_extractor import PatientInfo
 from openai import OpenAI
 
 load_dotenv()
 
-client = OpenAI()
+client = get_client()
 
 
 def extract_notes(notes: str) -> list[PatientInfo]:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="qwen3:30b",
         messages=[
             {
                 "role": "system",
