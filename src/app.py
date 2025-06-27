@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from baml_client import b
+
 from helpers import (
     AgentOrchestrator,
     DatabaseManager,
@@ -92,7 +92,9 @@ async def run_agent(request: QuestionRequest):
             answer=answer,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing question: {str(e)}"
+        )
 
 
 @app.post("/query_vector_index_symptoms", response_model=VectorQueryResponse)
@@ -102,7 +104,9 @@ async def query_symptoms_endpoint(request: VectorQueryRequest):
         results = query_vector_index_symptoms(db_manager, request.query)
         return VectorQueryResponse(results=results)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error querying symptoms: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error querying symptoms: {str(e)}"
+        )
 
 
 @app.post("/query_vector_index_conditions", response_model=VectorQueryResponse)
@@ -112,7 +116,9 @@ async def query_conditions_endpoint(request: VectorQueryRequest):
         results = query_vector_index_conditions(db_manager, request.query)
         return VectorQueryResponse(results=results)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error querying conditions: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error querying conditions: {str(e)}"
+        )
 
 
 @app.get("/health")

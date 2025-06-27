@@ -13,7 +13,10 @@ def load_and_transform_data(file_path: str) -> pl.DataFrame:
 
     df_mod = df.with_columns(
         pl.col("medication").struct.field("name").str.to_lowercase().alias("drug_name"),
-        pl.col("medication").struct.field("date").str.to_date(format="%Y-%m-%d").alias("date"),
+        pl.col("medication")
+        .struct.field("date")
+        .str.to_date(format="%Y-%m-%d")
+        .alias("date"),
         pl.col("medication").struct.field("dosage").alias("dosage"),
         pl.col("medication").struct.field("frequency").alias("frequency"),
     )
@@ -24,7 +27,9 @@ def load_and_transform_data(file_path: str) -> pl.DataFrame:
 def create_schema(conn: kuzu.Connection) -> None:
     """Create the patient schema in the database"""
     # Create the patient table
-    conn.execute("CREATE NODE TABLE IF NOT EXISTS Patient(patient_id STRING PRIMARY KEY)")
+    conn.execute(
+        "CREATE NODE TABLE IF NOT EXISTS Patient(patient_id STRING PRIMARY KEY)"
+    )
 
     # Create the patient_drug rel table (DrugGeneric node table must pre-exist)
     conn.execute(
@@ -99,7 +104,9 @@ def main():
     merge_prescription_rels(
         conn, df.select("patient_id", "drug_name", "date", "dosage", "frequency")
     )
-    merge_symptom_rels(conn, df.select("patient_id", "side_effects").explode("side_effects"))
+    merge_symptom_rels(
+        conn, df.select("patient_id", "side_effects").explode("side_effects")
+    )
 
 
 if __name__ == "__main__":

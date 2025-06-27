@@ -4,7 +4,75 @@ from typing import Optional
 import kuzu
 from sentence_transformers import SentenceTransformer
 
-from baml_client import b, types
+from textwrap import dedent
+from typing import Optional
+
+import kuzu
+from sentence_transformers import SentenceTransformer
+from openai import OpenAI
+import json
+
+from pydantic_models.graphrag import Query, Tool
+
+MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+
+client = OpenAI(base_url = 'http://192.168.68.54:11434/v1', api_key='ollama')
+
+
+def rag_text_to_cypher(schema: str, question: str, additional_context: str | None) -> Query:
+    response = client.chat(
+        model="qwen3:30b",
+        messages=[
+            {
+                "role": "system",
+                "content": f"""Translate the given question into a valid Cypher query that respects the given graph schema.\n\n<INSTRUCTIONS>\n- ALWAYS respect the relationship directions (from -> to) as provided in the <SCHEMA> section.\n- Use only the provided nodes, relationships and properties in your Cypher statement.\n- Properties can be on nodes or relationships - check the schema carefully to figure out where they are.\n- When returning results, return property values rather than the entire node or relationship.\n- ALWAYS use the WHERE clause to compare string properties, and compare them using the\nLOWER() function.\n- Pay attention to the ADDITIONAL_CONTEXT to figure out what to add in the\nWHERE clause.\n- Do not use APOC as the database does not support it.\n</INSTRUCTIONS>\n\n<SCHEMA>{schema}</SCHEMA>\n\nRespond with a JSON object that adheres to the following schema: \n{{\"properties\": {{\"cypher\": {{\"description\": \"Valid Cypher query with no newlines\", \"title\": \"Cypher\", \"type\": \"string\"}}}}, \"required\": [\"cypher\"], \"title\": \"Query\", \"type\": \"object\"}}\n""",
+            },
+            {
+                "role": "user",
+                "content": f"<QUESTION>{question}</QUESTION>\n<ADDITIONAL_CONTEXT>{additional_context}</ADDITIONAL_CONTEXT>",
+            },
+        ],
+        temperature=0.1,
+    )
+    result = json.loads(response.choices[0].message.content)
+    return Query.model_validate(result)
+
+
+def pick_tool(schema: str, query: str) -> Tool:
+    response = client.chat(
+        model="qwen3:30b",
+        messages=[
+            {
+                "role": "system",
+                "content": f"""A prior attempt to write a valid Cypher query failed because an exact match with a property value was not found. Analyze the given query and select the most appropriate tool that can retrieve more useful context to answer the question.\n\n<SCHEMA>{schema}</SCHEMA>\n\nRespond with a JSON object that adheres to the following schema: \n{{\"enum\": [\"Text2Cypher\", \"VectorSearchSymptoms\", \"VectorSearchConditions\"], \"title\": \"Tool\", \"type\": \"string\"}}\n""",
+            },
+            {
+                "role": "user",
+                "content": f"<QUESTION>{query}</QUESTION>",
+            },
+        ],
+        temperature=0.1,
+    )
+    result = json.loads(response['message']['content'])
+    return Tool(result)
+
+
+def rag_answer_question(question: str, cypher: str, context: str) -> str:
+    response = client.chat(
+        model="qwen3:30b",
+        messages=[
+            {
+                "role": "system",
+                "content": "You are an AI assistant for Retrieval-Augmented Generation (RAG).",
+            },
+            {
+                "role": "user",
+                "content": f"""<INSTRUCTIONS>\n- Use the provided question, the generated Cypher query and the CONTEXT to answer the question.\n- If the CONTEXT is empty, state that you don't have enough information to answer the question.\n</INSTRUCTIONS>\n\n<QUESTION>{question}</QUESTION>\n\n<CYPHER>{cypher}</CYPHER>\n\n<CONTEXT>{context}</CONTEXT>\n\nRESPONSE:\n""",
+            },
+        ],
+        temperature=0.1,
+    )
+    return response['message']['content']
 
 MODEL = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -201,7 +269,7 @@ class GraphRAG:
         Retrieve information from the graph database using text2cypher
         """
         prompt_context = self.schema
-        query = b.RAGText2Cypher(prompt_context, question, additional_context)
+        query = rag_text_to_cypher(prompt_context, question, additional_context)
         result = {
             "question": question,
             "cypher": query.cypher.replace("\n", " "),
@@ -222,7 +290,7 @@ class GraphRAG:
         question = response["question"]
         cypher = response["cypher"]
         context = response["response"]
-        answer = b.RAGAnswerQuestion(question, cypher, context)
+        answer = rag_answer_question(question, cypher, context)
         return answer
 
 
@@ -259,8 +327,8 @@ class AgentOrchestrator:
         """
         Try agentic approach with tool routing
         """
-        # We'll use the BAML function to select the next tool to use
-        next_tool = b.PickTool(self.rag.schema, question)
+        # We'll use the new function to select the next tool to use
+        next_tool = pick_tool(self.rag.schema, question)
 
         if not next_tool or not next_tool.value:
             return None

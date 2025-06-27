@@ -4,7 +4,9 @@ import requests
 import streamlit as st
 
 # Set page configuration
-st.set_page_config(page_title="Graph + vector RAG in Kuzu", page_icon="🔍", layout="wide")
+st.set_page_config(
+    page_title="Graph + vector RAG in Kuzu", page_icon="🔍", layout="wide"
+)
 
 # Initialize session state for chat history
 if "chat_history" not in st.session_state:
@@ -28,7 +30,9 @@ def call_api_endpoint(endpoint: str, data: dict):
 def call_vector_endpoint(endpoint: str, query: str):
     """Helper function to call vector search endpoints."""
     try:
-        response = requests.post(f"{API_BASE_URL}{endpoint}", json={"query": query}, timeout=30)
+        response = requests.post(
+            f"{API_BASE_URL}{endpoint}", json={"query": query}, timeout=30
+        )
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
@@ -74,7 +78,9 @@ def test_vector_search(query: str, search_type: str):
 
 # App title
 st.title("Graph + vector RAG in Kuzu")
-st.markdown("Ask questions about the data in your Kuzu database and get answers powered by RAG.")
+st.markdown(
+    "Ask questions about the data in your Kuzu database and get answers powered by RAG."
+)
 
 # User input
 with st.form(key="question_form"):
@@ -131,7 +137,9 @@ if st.session_state.chat_history:
     if latest["cypher"] and latest["cypher"] != "N/A":
         st.code(latest["cypher"], language="cypher")
     else:
-        st.error("No Cypher query was generated for this question. Try rephrasing your question.")
+        st.error(
+            "No Cypher query was generated for this question. Try rephrasing your question."
+        )
 
     # Display the answer (full width)
     st.subheader("Answer")
@@ -172,12 +180,14 @@ if len(st.session_state.chat_history) > 1:
 # About section in the sidebar
 with st.sidebar:
     st.header("About")
-    st.markdown("""
+    st.markdown(
+        """
     This application uses Graph RAG to:
     1. Convert natural language questions to Cypher queries
     2. Execute the queries against a Kuzu graph database
     3. Generate natural language answers
-    """)
+    """
+    )
 
     st.markdown("---")
     st.markdown(
@@ -210,7 +220,9 @@ with st.sidebar:
 
         # Vector search testing
         st.subheader("Test Vector Search")
-        vector_query = st.text_input("Enter query for vector search:", placeholder="sleepiness")
+        vector_query = st.text_input(
+            "Enter query for vector search:", placeholder="sleepiness"
+        )
         col1, col2 = st.columns(2)
 
         with col1:
