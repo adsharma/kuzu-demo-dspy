@@ -53,20 +53,24 @@ conn.execute(
     ALTER TABLE Condition ADD IF NOT EXISTS condition_embedding FLOAT[384];
     """
 )
-conn.execute(
-    """
-    LOAD FROM symptoms_df
-    MATCH (s:Symptom {name: id})
-    SET s.symptoms_embedding = symptoms_embedding
-    """
-)
-conn.execute(
-    """
-    LOAD FROM conditions_df
-    MATCH (c:Condition {name: id})
-    SET c.condition_embedding = condition_embedding
-    """
-)
+# Update symptoms embeddings using parameterized queries
+for row in symptoms_df.iter_rows(named=True):
+    conn.execute(
+        """
+        MATCH (s:Symptom {name: $name})
+        SET s.symptoms_embedding = $embedding
+        """,
+        {"name": row["id"], "embedding": row["symptoms_embedding"]}
+    )
+# Update conditions embeddings using parameterized queries
+for row in conditions_df.iter_rows(named=True):
+    conn.execute(
+        """
+        MATCH (c:Condition {name: $name})
+        SET c.condition_embedding = $embedding
+        """,
+        {"name": row["id"], "embedding": row["condition_embedding"]}
+    )
 print("Finished loading embeddings into the database")
 
 # Create a vector index on the product summary embedding

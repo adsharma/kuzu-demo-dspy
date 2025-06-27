@@ -95,7 +95,7 @@ def main():
     conn = kuzu.Connection(db)
 
     # Load and transform data
-    df = load_and_transform_data("../data/extracted_data/notes.json")
+    df = load_and_transform_data("data/extracted_data/notes.json")
     # Create schema
     create_schema(conn)
 
