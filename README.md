@@ -5,16 +5,15 @@ and drug side effects into a knowledge graph in Kuzu. The graph is then used to 
 about the data using a Graph RAG pipeline.
 
 Tools used
-- [BAML](https://github.com/boundaryml/baml): AI and LLM prompting framework
+- [DSPy](https://dspy.ai/): Programming—not prompting—LMs
 - [Kuzu](https://github.com/kuzudb/kuzu): Embedded, fast, scalable graph database
 - [Streamlit](https://github.com/streamlit/streamlit): Visualization framework for building custom web apps
 
 ## Overview
 
 The goal is to show how to build modular "agents" (i.e., prompt pipelines that accomplish a
-subtask) that can then be strung together to accomplish more complex tasks. BAML allows users
-to compose together these kinds of agents with testing and validation capabilities, by offering
-a reliable means to generate structured outputs from LLMs.
+subtask) that can then be strung together to accomplish more complex tasks. DSPy has been making
+progress on extracting structured data from text/images without customizing prompts lately.
 
 Kuzu is used as a data store for the graph, and Streamlit is used to build a simple UI for
 interacting with the graph.
@@ -35,13 +34,11 @@ Ensure you have Python 3.11+ installed.
    # Install the dependencies
    uv sync
    ```
-3. Activate the environment and generate the BAML client files
+3. Activate the environment
 ```bash
 cd
 source .venv/bin/activate
-baml-cli generate
 ```
-This will generate the BAML client files in the `src/baml_client` directory.
 
 ## Extract data from images and text
 
