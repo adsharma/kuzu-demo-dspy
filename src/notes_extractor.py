@@ -1,33 +1,40 @@
 import json
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-from helpers import get_client
-from pydantic_models.notes_extractor import PatientInfo
-from openai import OpenAI
+from typing import List
+import dspy
+from pydantic_models.notes_extractor import PatientInfo, Medication
 
-load_dotenv()
+# Configure the language model
+lm = dspy.LM("ollama_chat/qwen3:30b", api_base="http://192.168.68.54:11434", api_key="")
+dspy.configure(lm=lm)
 
-client = get_client()
+
+class ExtractPatientInfo(dspy.Signature):
+    """Extract medication information from nurse's notes containing multiple patients. Include only documented side effects, not vital signs or observations. When listing side effects, do not describe intensity or frequency. Process ALL patients in the notes."""
+
+    notes: str = dspy.InputField(
+        desc="Nurse's notes containing medication information for multiple patients"
+    )
+    patients: list[PatientInfo] = dspy.OutputField(
+        desc="List of patients with their medication details"
+    )
+
+
+class MedicationExtractor(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.extract = dspy.Predict(ExtractPatientInfo)
+
+    def forward(self, notes: str):
+        return self.extract(notes=notes)
 
 
 def extract_notes(notes: str) -> list[PatientInfo]:
-    response = client.chat.completions.create(
-        model="qwen3:30b",
-        messages=[
-            {
-                "role": "system",
-                "content": 'Extract the medication information from the following nurse\'s notes. Include only documented side effects, not vital signs or observations. When listing side effects, do not describe its intensity or frequency. ONLY list the name of the side effect. Respond with a JSON object that adheres to the following schema: \n{"properties": {"patient_id": {"title": "Patient ID", "type": "string"}, "medication": {"$ref": "#/definitions/Medication"}, "side_effects": {"description": "Do not list intensity or frequency of the side effect", "items": {"type": "string"}, "title": "Side Effects", "type": "array"}}, "required": ["patient_id", "medication", "side_effects"], "title": "PatientInfo", "type": "object", "definitions": {"Medication": {"properties": {"name": {"title": "Name", "type": "string"}, "date": {"description": "Date format is YYYY-MM-DD", "title": "Date", "type": "string"}, "dosage": {"description": "Dosage of the medication", "title": "Dosage", "type": "string"}, "frequency": {"description": "Frequency of the medication", "title": "Frequency", "type": "string"}}, "required": ["name", "date", "dosage", "frequency"], "title": "Medication", "type": "object"}}}',
-            },
-            {
-                "role": "user",
-                "content": notes,
-            },
-        ],
-        temperature=0.1,
-    )
-    result = json.loads(response.choices[0].message.content)
-    return [PatientInfo.model_validate(item) for item in result]
+    extractor = MedicationExtractor()
+    result = extractor(notes=notes)
+
+    return result.patients
 
 
 if __name__ == "__main__":
