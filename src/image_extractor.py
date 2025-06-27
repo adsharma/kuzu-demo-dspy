@@ -4,41 +4,46 @@ from pathlib import Path
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from pydantic_models.image_extractor import ConditionAndDrug
-from helpers import get_client
 import base64
 import mimetypes
-from openai import OpenAI
+import dspy
 
 load_dotenv()
 
-client = get_client()
+# Configure the language model
+lm = dspy.LM("ollama_chat/gemma3n:e4b", api_base="http://192.168.68.54:11434", api_key="")
+dspy.configure(lm=lm)
+
+
+class ExtractMedicalInfo(dspy.Signature):
+    """Extract healthcare and pharmaceutical information from an image. Extract the condition, drug names and side effects from these columns: Reason for drug, Drug names: Generic name & (Brand name), Side effects."""
+
+    image: str = dspy.InputField(
+        desc="Base64-encoded image with medical information"
+    )
+    medical_data: list[ConditionAndDrug] = dspy.OutputField(
+        desc="List of extracted medical conditions, drugs and side effects"
+    )
+
+
+class MedicalInfoExtractor(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.extract = dspy.Predict(ExtractMedicalInfo)
+
+    def forward(self, image: str):
+        return self.extract(image=image)
 
 
 def extract_from_base64(
     base64_str: str, mime_type: str = "image/png"
 ) -> list[ConditionAndDrug]:
     """Extract entities from a base64-encoded image"""
-    response = client.chat.completions.create(
-        model="qwen3:30b",
-        messages=[
-            {
-                "role": "system",
-                "content": 'You are an expert at extracting healthcare and pharmaceutical information. Extract the condition, drug names and side effects from these columns: Reason for drug, Drug names: Generic name & (Brand name), Side effects. Respond with a JSON object that adheres to the following schema: \n{"properties": {"condition": {"title": "Condition", "type": "string"}, "drug": {"items": {"$ref": "#/definitions/Drug"}, "title": "Drug", "type": "array"}, "side_effects": {"items": {"type": "string"}, "title": "Side Effects", "type": "array"}}, "required": ["condition", "drug", "side_effects"], "title": "ConditionAndDrug", "type": "object", "definitions": {"Drug": {"properties": {"generic_name": {"title": "Generic Name", "type": "string"}, "brand_names": {"description": "Strip the \\u00ae character at the end of the brand names", "items": {"type": "string"}, "title": "Brand Names", "type": "array"}}, "required": ["generic_name", "brand_names"], "title": "Drug", "type": "object"}}}',
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:{mime_type};base64,{base64_str}"},
-                    },
-                ],
-            },
-        ],
-        temperature=0.1,
-    )
-    result = json.loads(response.choices[0].message.content)
-    return [ConditionAndDrug.model_validate(item) for item in result]
+    extractor = MedicalInfoExtractor()
+    # Create a data URL for the image
+    image_data_url = f"data:{mime_type};base64,{base64_str}"
+    result = extractor(image=image_data_url)
+    return result.medical_data
 
 
 def extract_from_file(file_path: Path) -> list[ConditionAndDrug]:
