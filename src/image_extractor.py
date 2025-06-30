@@ -1,25 +1,29 @@
 import json
-import os
 from pathlib import Path
-from pydantic import BaseModel
 from dotenv import load_dotenv
 from pydantic_models.image_extractor import ConditionAndDrug
-import base64
-import mimetypes
 import dspy
 
 load_dotenv()
 
 # Configure the language model
-lm = dspy.LM("ollama_chat/gemma3n:e4b", api_base="http://192.168.68.54:11434", api_key="")
+lm = dspy.LM("openai/qwen2.5vl:7b", api_base="http://192.168.68.54:11434/v1", api_key="ollama")
 dspy.configure(lm=lm)
 
 
-class ExtractMedicalInfo(dspy.Signature):
-    """Extract healthcare and pharmaceutical information from an image. Extract the condition, drug names and side effects from these columns: Reason for drug, Drug names: Generic name & (Brand name), Side effects."""
+class Describe(dspy.Signature):
+    """Describe the image in detail. Respond only in English."""
 
-    image: str = dspy.InputField(
-        desc="Base64-encoded image with medical information"
+    image: dspy.Image = dspy.InputField(desc="A photo")
+    table: str = dspy.OutputField(desc="Table containing 3 columns with medical info")
+
+
+class ExtractMedicalInfo(dspy.Signature):
+    """Extract healthcare and pharmaceutical information from an image containing a table or list.
+       Strip the ® character at the end of the brand names."""
+
+    table: str = dspy.InputField(
+        desc="A markdown table containing medical conditions, drugs, and side effects "
     )
     medical_data: list[ConditionAndDrug] = dspy.OutputField(
         desc="List of extracted medical conditions, drugs and side effects"
@@ -31,37 +35,19 @@ class MedicalInfoExtractor(dspy.Module):
         super().__init__()
         self.extract = dspy.Predict(ExtractMedicalInfo)
 
-    def forward(self, image: str):
-        return self.extract(image=image)
+    def forward(self, table: str):
+        return self.extract(table=table)
 
-
-def extract_from_base64(
-    base64_str: str, mime_type: str = "image/png"
-) -> list[ConditionAndDrug]:
-    """Extract entities from a base64-encoded image"""
-    extractor = MedicalInfoExtractor()
-    # Create a data URL for the image
-    image_data_url = f"data:{mime_type};base64,{base64_str}"
-    result = extractor(image=image_data_url)
-    return result.medical_data
 
 
 def extract_from_file(file_path: Path) -> list[ConditionAndDrug]:
-    """Extract entities from an image file"""
-    with open(file_path, "rb") as f:
-        image_bytes = f.read()
+    """Extract entities from an image file."""
 
-    base64_str = base64.b64encode(image_bytes).decode()
-    mime_type = mimetypes.guess_type(file_path)[0] or "image/png"
-    return extract_from_base64(base64_str, mime_type)
-
-
-def extract_from_bytes(
-    image_bytes: bytes, mime_type: str = "image/png"
-) -> list[ConditionAndDrug]:
-    """Extract entities from a bytes object"""
-    base64_str = base64.b64encode(image_bytes).decode()
-    return extract_from_base64(base64_str, mime_type)
+    p = dspy.Predict(Describe)
+    result = p(image=dspy.Image.from_url(str(file_path)))
+    # print("Extracted table:\n", result.table)
+    extractor = MedicalInfoExtractor()
+    return extractor(table=result.table).medical_data
 
 
 if __name__ == "__main__":
@@ -72,6 +58,7 @@ if __name__ == "__main__":
     for file in files:
         # We are working with files, so we can pass in the file path directly
         result = extract_from_file(file)
+        # dspy.inspect_history(n=5)
         output_path = output_dir / file.with_suffix(".json").name
 
         with output_path.open("w") as f:
